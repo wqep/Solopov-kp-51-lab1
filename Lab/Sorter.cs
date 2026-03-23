@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Lab;
 
 public class Sorter
@@ -7,7 +9,8 @@ public class Sorter
 
     public void InitCollection()
     {
-        if (_collection != null) _collection = new Record[50];
+        _collection = new Record[50];
+        _counter = 0;
     }
 
     public void AddRecord(Record record)
@@ -41,9 +44,9 @@ public class Sorter
 
     public void PrintAll()
     {
-        foreach (Record record in _collection)
+        for (int i = 0; i < _counter; i++)
         {
-            Console.WriteLine(record);
+            Console.WriteLine(_collection[i]);
         }
     }
 
@@ -64,16 +67,20 @@ public class Sorter
             new Record(11, "Crazy Film 2", "UnbreakableDiamond04", 10),
         ];
 
-        _counter = 11;
+        _counter = 12;
     }
 
     public void SortCollection()
     {
         if (_collection == null) return;
+        
+        SortStatistics.Reset();
+        Stopwatch watch = Stopwatch.StartNew();
 
         int min = 11;
         int max = 0;
 
+        SortStatistics.UpdatePasses();
         for (int i = 0; i < _counter; i++)
         {
             if (_collection[i].GetRating() < min)
@@ -89,11 +96,13 @@ public class Sorter
         
         int[] count = new int[max - min + 1];
 
+        SortStatistics.UpdatePasses();
         for (int i = 0; i < _collection.Length; i++)
         {
             count[_collection[i].GetRating() - min]++;
         }
         
+        SortStatistics.UpdatePasses();
         for (int i = 1; i < count.Length; i++)
         {
             count[i] += count[i - 1];
@@ -101,6 +110,7 @@ public class Sorter
         
         Record[] output = new Record[_collection.Length];
         
+        SortStatistics.UpdatePasses();
         for (int i = _collection.Length - 1; i >= 0; i--)
         {
             int currentRating = _collection[i].GetRating();
@@ -109,10 +119,22 @@ public class Sorter
             int targetPosition = count[countIndex] - 1;
             output[targetPosition] = _collection[i];
             
+            SortStatistics.UpdateCopies();
+            
             count[countIndex]--;
         }
         
-        Array.Copy(output, _collection, _collection.Length);
+        SortStatistics.UpdatePasses();
+        for (int i = 0; i < _collection.Length; i++)
+        {
+            _collection[i] = output[i];
+            SortStatistics.UpdateCopies();
+        }
+        
+        watch.Stop();
+        long elapsedMs = watch.ElapsedMilliseconds;
+        
+        SortStatistics.UpdateTime(elapsedMs);
     }
 
     public void RatingOfTheFilm()
@@ -129,7 +151,7 @@ public class Sorter
         Console.WriteLine($"Rating of the film is: {rating / _collection.Length}");
     }
 
-    public void CountScores()
+    public void CountRatings()
     {
         if (_collection == null) return;
 
@@ -158,11 +180,11 @@ public class Sorter
 
         for (int i = 0; i < count.Length; i++)
         {
-            Console.WriteLine($"{i + 1} Rating appeared {count[i]} times.");
+            Console.WriteLine($"Rating [{i + 1}] appeared {count[i]} times.");
         }
     }
 
-    public void MostCommonRating()
+    public void MostCommonRating() // Також є модою
     {
         if (_collection == null) return;
 
@@ -199,7 +221,7 @@ public class Sorter
             }
         }
         
-        Console.Write($"The most common rating is: ");
+        Console.Write($"The most common rating (also Mode) is: ");
         
         for (int i = 0; i < commonRating.Count - 1; i++)
         {
@@ -207,5 +229,26 @@ public class Sorter
         }
         
         Console.WriteLine($"[{commonRating[^1]}].");
+    }
+
+    public void FindMedian()
+    {
+        if (_collection == null) return;
+        
+        SortCollection();
+        
+        int middleIndex = _collection.Length / 2;
+
+        if (_collection.Length % 2 == 0)
+        {
+            Console.WriteLine($"Median of the rating in this collection is: {_collection[middleIndex].GetRating()}");
+        }
+        else
+        {
+            int n1 = _collection[middleIndex].GetRating();
+            int n2 = _collection[middleIndex - 1].GetRating();
+            
+            Console.WriteLine($"Median of the rating in this collection is: {(n1 + n2) / 2}");
+        }
     }
 }
